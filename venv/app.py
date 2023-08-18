@@ -110,8 +110,8 @@ class Humidity(db.Model):
     LoadDate = db.Column(db.DateTime)
     Humidity = db.Column(db.Float())
 
-    def __init__(self,humidity):
-        self.Humidity = humidity
+    def __init__(self,Humidity):
+        self.Humidity = Humidity
     def __repr__(self):
         return '' % self.id
     def create(self):
