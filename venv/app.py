@@ -86,7 +86,24 @@ class Compass(db.Model):
         db.session.commit()
         return self
     
+class Gyroscope(db.Model):
+    __tablename__ = "Gyroscope"
+    ID = db.Column(db.Integer, primary_key=True)
+    LoadDate = db.Column(db.DateTime)
+    X = db.Column(db.Float())
+    Y = db.Column(db.Float())
+    Z = db.Column(db.Float())
 
+    def __init__(self,X,Y,Z):
+        self.X = X
+        self.Y = Y
+        self.Z = Z
+    def __repr__(self):
+        return '' % self.id
+    def create(self):
+        db.session.add(self)
+        db.session.commit()
+        return self
 
 
 
@@ -120,6 +137,12 @@ class AccelerometerSchema(ma.SQLAlchemyAutoSchema):
 class CompassSchema(ma.SQLAlchemyAutoSchema):
     class Meta():
         model = Compass
+        sqla_session = db.session
+        load_instance = True
+
+class GyroscopeSchema(ma.SQLAlchemyAutoSchema):
+    class Meta():
+        model = Gyroscope
         sqla_session = db.session
         load_instance = True
 
@@ -197,7 +220,7 @@ def create_product():
     # result = product_schema.dump(product.create())
     return make_response(jsonify({"product": data}),200)
 
-
+#region Compass routes
 @app.route('/Compass', methods = ['GET'])
 def get_comps():
     get_compass = Compass.query.all()
@@ -217,3 +240,26 @@ def create_comp():
     comp = comp_schema.load(data,partial=True)
     result = comp_schema.dump(comp.create())
     return make_response(jsonify({"Compass": result}),200)
+#endregion
+
+#region Gyroscope routes
+@app.route('/Gyroscope', methods = ['GET'])
+def get_gyros():
+    get_gyroscope = Gyroscope.query.all()
+    gyroscope_schema = GyroscopeSchema(many=True)
+    gyroscopes = gyroscope_schema.dump(get_gyroscope)
+    return make_response(jsonify({"Gyroscope": gyroscopes}))
+@app.route('/Gyroscope/<id>', methods = ['GET'])
+def get_gyro(id):
+    get_gyroscope = Gyroscope.query.get(id)
+    gyroscope_schema = GyroscopeSchema(many=False)
+    gyroscopes = gyroscope_schema.dump(get_gyroscope)
+    return make_response(jsonify({"Gyroscope": gyroscopes}))
+@app.route('/Gyroscope', methods = ['POST'])
+def create_gryoscope():
+    data = request.get_json()
+    gyroscope_schema = GyroscopeSchema()
+    gyro = gyroscope_schema.load(data,partial=True)
+    result = gyroscope_schema.dump(gyro.create())
+    return make_response(jsonify({"Gyroscope": result}),200)
+#endregion
