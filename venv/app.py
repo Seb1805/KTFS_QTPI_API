@@ -69,6 +69,22 @@ class Accelerometer(db.Model):
         db.session.add(self)
         db.session.commit()
         return self
+
+
+class Compass(db.Model):
+    __tablename__ = "Compass"
+    ID = db.Column(db.Integer, primary_key=True)
+    LoadDate = db.Column(db.DateTime)
+    DegreesToNorth = db.Column(db.Float())
+
+    def __init__(self,DegreesToNorth):
+        self.DegreesToNorth = DegreesToNorth
+    def __repr__(self):
+        return '' % self.id
+    def create(self):
+        db.session.add(self)
+        db.session.commit()
+        return self
     
 
 
@@ -97,6 +113,13 @@ class TemperatureSchema(ma.SQLAlchemyAutoSchema):
 class AccelerometerSchema(ma.SQLAlchemyAutoSchema):
     class Meta():
         model = Accelerometer
+        sqla_session = db.session
+        load_instance = True
+
+
+class CompassSchema(ma.SQLAlchemyAutoSchema):
+    class Meta():
+        model = Compass
         sqla_session = db.session
         load_instance = True
 
@@ -173,3 +196,24 @@ def create_product():
     # product = product_schema.load(data)
     # result = product_schema.dump(product.create())
     return make_response(jsonify({"product": data}),200)
+
+
+@app.route('/Compass', methods = ['GET'])
+def get_comps():
+    get_compass = Compass.query.all()
+    compass_schema = CompassSchema(many=True)
+    compass = compass_schema.dump(get_compass)
+    return make_response(jsonify({"Compass": compass}))
+@app.route('/Compass/<id>', methods = ['GET'])
+def get_comp(id):
+    get_compass = Compass.query.get(id)
+    compass_schema = CompassSchema(many=False)
+    compass = compass_schema.dump(get_compass)
+    return make_response(jsonify({"Compass": compass}))
+@app.route('/Compass', methods = ['POST'])
+def create_comp():
+    data = request.get_json()
+    comp_schema = CompassSchema()
+    comp = comp_schema.load(data,partial=True)
+    result = comp_schema.dump(comp.create())
+    return make_response(jsonify({"Compass": result}),200)
