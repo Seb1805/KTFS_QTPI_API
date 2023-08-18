@@ -104,7 +104,7 @@ class Gyroscope(db.Model):
         db.session.add(self)
         db.session.commit()
         return self
-class Humidity:
+class Humidity(db.Model):
     __tablename__ = "Humidity"
     ID = db.Column(db.Integer, primary_key=True)
     LoadDate = db.Column(db.DateTime)
@@ -307,7 +307,7 @@ def create_gryoscope():
     return make_response(jsonify({"Gyroscope": result}),200)
 #endregion
 
-#region Accelerometer routes
+#region Oritentation routes
 @app.route('/Orientation', methods = ['GET'])
 def get_oriens():
     get_orientation = Orientation.query.all()
@@ -330,24 +330,24 @@ def create_orientation():
 #endregion
 
 #region Humidity region
-@app.route('/Hunidity', methods = ['GET'])
-def get_gyros():
+@app.route('/Humidity', methods = ['GET'])
+def get_hunidities():
     get_humidity = Humidity.query.all()
     humidity_schema = HumiditySchema(many=True)
     humidities = humidity_schema.dump(get_humidity)
-    return make_response(jsonify({"Hunidity": humidities}))
-@app.route('/Hunidity/<id>', methods = ['GET'])
-def get_gyro(id):
+    return make_response(jsonify({"Humidity": humidities}))
+@app.route('/Humidity/<id>', methods = ['GET'])
+def get_Humidity(id):
     get_humidity = Humidity.query.get(id)
     humidity_schema = HumiditySchema(many=False)
     humidities = humidity_schema.dump(get_humidity)
-    return make_response(jsonify({"Hunidity": humidities}))
-@app.route('/Hunidity', methods = ['POST'])
-def create_gryoscope():
+    return make_response(jsonify({"Humidity": humidities}))
+@app.route('/Humidity', methods = ['POST'])
+def create_humidity():
     data = request.get_json()
-    humidity_schema = GyroscopeSchema()
+    humidity_schema = HumiditySchema()
     humidity = humidity_schema.load(data,partial=True)
     result = humidity_schema.dump(humidity.create())
-    return make_response(jsonify({"Hunidity": result}),200)
+    return make_response(jsonify({"Humidity": result}),200)
 
 #endregion
