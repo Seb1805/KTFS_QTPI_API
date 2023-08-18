@@ -105,6 +105,20 @@ class Gyroscope(db.Model):
         db.session.commit()
         return self
 
+class Humidity:
+    __tablename__ = "Humidity"
+    ID = db.Column(db.Integer, primary_key=True)
+    LoadDate = db.Column(db.DateTime)
+    Humidity = db.Column(db.Float())
+
+    def __init__(self,humidity):
+        self.Humidity = humidity
+    def __repr__(self):
+        return '' % self.id
+    def create(self):
+        db.session.add(self)
+        db.session.commit()
+        return self
 
 
 # with app.app_context():
@@ -143,6 +157,12 @@ class CompassSchema(ma.SQLAlchemyAutoSchema):
 class GyroscopeSchema(ma.SQLAlchemyAutoSchema):
     class Meta():
         model = Gyroscope
+        sqla_session = db.session
+        load_instance = True
+
+class HumiditySchema(ma.SQLAlchemyAutoSchema):
+    class Meta():
+        model = Humidity
         sqla_session = db.session
         load_instance = True
 
@@ -262,4 +282,29 @@ def create_gryoscope():
     gyro = gyroscope_schema.load(data,partial=True)
     result = gyroscope_schema.dump(gyro.create())
     return make_response(jsonify({"Gyroscope": result}),200)
+#endregion
+
+
+
+#region Humidity region
+@app.route('/Hunidity', methods = ['GET'])
+def get_gyros():
+    get_humidity = Humidity.query.all()
+    humidity_schema = HumiditySchema(many=True)
+    humidities = humidity_schema.dump(get_humidity)
+    return make_response(jsonify({"Hunidity": humidities}))
+@app.route('/Hunidity/<id>', methods = ['GET'])
+def get_gyro(id):
+    get_humidity = Humidity.query.get(id)
+    humidity_schema = HumiditySchema(many=False)
+    humidities = humidity_schema.dump(get_humidity)
+    return make_response(jsonify({"Hunidity": humidities}))
+@app.route('/Hunidity', methods = ['POST'])
+def create_gryoscope():
+    data = request.get_json()
+    humidity_schema = GyroscopeSchema()
+    humidity = humidity_schema.load(data,partial=True)
+    result = humidity_schema.dump(humidity.create())
+    return make_response(jsonify({"Hunidity": result}),200)
+
 #endregion
