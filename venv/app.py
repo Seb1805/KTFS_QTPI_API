@@ -374,7 +374,7 @@ def get_pressures():
     get_pressure = Pressure.query.all()
     pressure_schema = PressureSchema(many=True)
     pressures = pressure_schema.dump(get_pressure)
-    return make_response(jsonify({"Humidity": pressures}))
+    return make_response(jsonify({"Pressure": pressures}))
 @app.route('/Pressure/<id>', methods = ['GET'])
 def get_pressure(id):
     get_pressure = Pressure.query.get(id)
@@ -387,5 +387,5 @@ def create_pressure():
     pressure_schema = PressureSchema()
     pressure = pressure_schema.load(data,partial=True)
     result = pressure_schema.dump(pressure.create())
-    return make_response(jsonify({"Humidity": result}),200)
+    return make_response(jsonify({"Pressure": result}),200)
 #endregion
