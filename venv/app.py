@@ -104,7 +104,6 @@ class Gyroscope(db.Model):
         db.session.add(self)
         db.session.commit()
         return self
-
 class Humidity:
     __tablename__ = "Humidity"
     ID = db.Column(db.Integer, primary_key=True)
@@ -119,6 +118,26 @@ class Humidity:
         db.session.add(self)
         db.session.commit()
         return self
+
+class Orientation(db.Model):
+    __tablename__ = "Orientation"
+    ID = db.Column(db.Integer, primary_key=True)
+    LoadDate = db.Column(db.DateTime)
+    Pitch = db.Column(db.Float())
+    Roll = db.Column(db.Float())
+    Yaw = db.Column(db.Float())
+
+    def __init__(self,Pitch,Roll,Yaw):
+        self.Pitch = Pitch
+        self.Roll = Roll
+        self.Yaw = Yaw
+    def __repr__(self):
+        return '' % self.id
+    def create(self):
+        db.session.add(self)
+        db.session.commit()
+        return self
+
 
 
 # with app.app_context():
@@ -166,7 +185,11 @@ class HumiditySchema(ma.SQLAlchemyAutoSchema):
         sqla_session = db.session
         load_instance = True
 
-
+class OrientationSchema(ma.SQLAlchemyAutoSchema):
+    class Meta():
+        model = Orientation
+        sqla_session = db.session
+        load_instance = True
     # id = fields.Number(dump_only=True)
     # LoadDate = fields.DateTime(dump_only=True)
     # Temperature = fields.Float(required = True)
@@ -284,7 +307,27 @@ def create_gryoscope():
     return make_response(jsonify({"Gyroscope": result}),200)
 #endregion
 
-
+#region Accelerometer routes
+@app.route('/Orientation', methods = ['GET'])
+def get_oriens():
+    get_orientation = Orientation.query.all()
+    orientation_schema = OrientationSchema(many=True)
+    orientations = orientation_schema.dump(get_orientation)
+    return make_response(jsonify({"Orientation": orientations}))
+@app.route('/Orientation/<id>', methods = ['GET'])
+def get_orien(id):
+    get_orientation = Orientation.query.get(id)
+    orientation_schema = OrientationSchema(many=False)
+    orientations = orientation_schema.dump(get_orientation)
+    return make_response(jsonify({"Orientation": orientations}))
+@app.route('/Orientation', methods = ['POST'])
+def create_orientation():
+    data = request.get_json()
+    orientation_schema = OrientationSchema()
+    orin = orientation_schema.load(data,partial=True)
+    result = orientation_schema.dump(orin.create())
+    return make_response(jsonify({"Orientation": result}),200)
+#endregion
 
 #region Humidity region
 @app.route('/Hunidity', methods = ['GET'])
