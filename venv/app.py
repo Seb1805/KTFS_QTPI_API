@@ -138,7 +138,20 @@ class Orientation(db.Model):
         db.session.commit()
         return self
 
+class Pressure(db.Model):
+    __tablename__ = "Pressure"
+    ID = db.Column(db.Integer, primary_key=True)
+    LoadDate = db.Column(db.DateTime)
+    PressureInHectoPascal = db.Column(db.Float())
 
+    def __init__(self,PressureInHectoPascal):
+        self.PressureInHectoPascal = PressureInHectoPascal
+    def __repr__(self):
+        return '' % self.id
+    def create(self):
+        db.session.add(self)
+        db.session.commit()
+        return self
 
 # with app.app_context():
 #     db.create_all()
@@ -195,7 +208,11 @@ class OrientationSchema(ma.SQLAlchemyAutoSchema):
     # Temperature = fields.Float(required = True)
 
 
-
+class PressureSchema(ma.SQLAlchemyAutoSchema):
+    class Meta():
+        model = Pressure
+        sqla_session = db.session
+        load_instance = True
 
 # @app.route('/products', methods = ['GET'])
 # def index():
@@ -349,5 +366,26 @@ def create_humidity():
     humidity = humidity_schema.load(data,partial=True)
     result = humidity_schema.dump(humidity.create())
     return make_response(jsonify({"Humidity": result}),200)
+#endregion
 
+#region Humidity region
+@app.route('/Pressure', methods = ['GET'])
+def get_pressures():
+    get_pressure = Pressure.query.all()
+    pressure_schema = PressureSchema(many=True)
+    pressures = pressure_schema.dump(get_pressure)
+    return make_response(jsonify({"Humidity": pressures}))
+@app.route('/Pressure/<id>', methods = ['GET'])
+def get_pressure(id):
+    get_pressure = Pressure.query.get(id)
+    pressure_schema = PressureSchema(many=False)
+    pressures = pressure_schema.dump(get_pressure)
+    return make_response(jsonify({"Pressure": pressures}))
+@app.route('/Pressure', methods = ['POST'])
+def create_pressure():
+    data = request.get_json()
+    pressure_schema = PressureSchema()
+    pressure = pressure_schema.load(data,partial=True)
+    result = pressure_schema.dump(pressure.create())
+    return make_response(jsonify({"Humidity": result}),200)
 #endregion
