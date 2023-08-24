@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://pyUser:password@192.168.3.213:3306/SensorData'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
-
+app.json.sort_keys = False
 
 ###Models####
 
