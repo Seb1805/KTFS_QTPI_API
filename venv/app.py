@@ -2,12 +2,21 @@ from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from marshmallow import fields
+from datetime import datetime
+from sqlalchemy import cast, DateTime,Date
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://pyUser:password@192.168.3.213:3306/SensorData'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.json.sort_keys = False
+
+
+from urllib.parse import urlparse, parse_qs
+
+
+
 
 ###Models####
 
@@ -42,14 +51,17 @@ class Temperature(db.Model):
     LoadDate = db.Column(db.DateTime)
     Temperature = db.Column(db.Float())
 
-    def __init__(self,Temperature):
+    def __init__(self, Temperature):
         self.Temperature = Temperature
+
     def __repr__(self):
-        return '' % self.id
+        return f"Temperature(ID={self.ID}, LoadDate={self.LoadDate}, Temperature={self.Temperature})"
+
     def create(self):
         db.session.add(self)
         db.session.commit()
         return self
+
 
 class Accelerometer(db.Model):
     __tablename__ = "Accelerometer"
@@ -234,6 +246,54 @@ def get_temp(id):
     temperature_schema = TemperatureSchema(many=False)
     temperatures = temperature_schema.dump(get_temperature)
     return make_response(jsonify({"Temperature": temperatures}))
+# @app.route('/Temperature/date', methods = ['GET'])
+# def get_temp_by_date():
+#     print(request.url)
+
+
+#     # Parse the URL
+#     parsed_url = urlparse(request.url)
+
+#     # Get the query string
+#     query_string = parsed_url.query
+
+#     # Parse the query string and get the parameters as a dictionary
+#     parameters = parse_qs(query_string)
+#     x_date = parameters.get("LoadDate",[""])[0]
+#     print(x_date)
+#     print(Temperature.LoadDate)
+#     #load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
+#     x_date = x_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+
+#     temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(x_date, '%Y-%m-%d %H:%M:%S')).all()
+
+#     temperature_schema = TemperatureSchema(many=True)
+#     temperatures_json = temperature_schema.dump(temperatures)
+
+#     return make_response(jsonify({"Temperature": temperatures_json}))
+@app.route('/Temperature/date', methods=['GET'])
+def get_temp_by_date():
+    load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
+    load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    print("LoadDate:", load_date)
+
+    # Print sample values of LoadDate column
+    sample_dates = Temperature.query.with_entities(Temperature.LoadDate).limit(5).all()
+    print("Sample LoadDate values:")
+    for date in sample_dates:
+        print(date[0])
+
+    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+        temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+    print("Number of temperatures:", len(temperatures))
+
+    temperature_schema = TemperatureSchema(many=False)
+    temperatures_json = temperature_schema.dump(temperatures)
+
+    #return make_response(jsonify({"Temperature": temperatures_json}))
+    temperatures_dict = [temperature_schema.dump(temperature) for temperature in temperatures]
+    return make_response(jsonify({"Temperature": temperatures_dict}))
+
 @app.route('/Temperature', methods = ['POST'])
 def create_temperature():
     data = request.get_json()
@@ -262,7 +322,7 @@ def create_accelerometer():
     accelerometer_schema = AccelerometerSchema()
     temp = accelerometer_schema.load(data,partial=True)
     result = accelerometer_schema.dump(temp.create())
-    return make_response(jsonify({"Temperature": result}),200)
+    return make_response(jsonify({"Accelerometer": result}),200)
 #endregion
 
 
