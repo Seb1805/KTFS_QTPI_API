@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from marshmallow import fields
 from datetime import datetime
-from sqlalchemy import cast, DateTime,Date
+from sqlalchemy import cast, DateTime, Date
 
 
 app = Flask(__name__)
@@ -273,26 +273,47 @@ def get_temp(id):
 #     return make_response(jsonify({"Temperature": temperatures_json}))
 @app.route('/Temperature/date', methods=['GET'])
 def get_temp_by_date():
-    load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
-    load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
-    print("LoadDate:", load_date)
-
+    load_date = None
+    load_end_date = None
+    if(request.args.get('LoadDate') != None):
+        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    
+    if(request.args.get('LoadEndDate') != None):
+        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
     # Print sample values of LoadDate column
     sample_dates = Temperature.query.with_entities(Temperature.LoadDate).limit(5).all()
-    print("Sample LoadDate values:")
-    for date in sample_dates:
-        print(date[0])
 
     #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-        temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-    print("Number of temperatures:", len(temperatures))
+    
+    if(load_date or load_end_date):
+        if(load_date):
+            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
+        else:
+            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+        if(load_end_date): 
+            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
+        else: 
+            load_end_date = cast(datetime.now(), DateTime)
+        # - startdate - enddate - startdate&enddate
+        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
+        temperatures = Temperature.query.filter(load_date < cast(Temperature.LoadDate, DateTime), 
+                                                cast(Temperature.LoadDate, DateTime) < load_end_date).all()
 
-    temperature_schema = TemperatureSchema(many=False)
-    temperatures_json = temperature_schema.dump(temperatures)
+        print(load_date)
+        print(load_end_date)
+        print(load_date < load_end_date)
 
-    #return make_response(jsonify({"Temperature": temperatures_json}))
-    temperatures_dict = [temperature_schema.dump(temperature) for temperature in temperatures]
-    return make_response(jsonify({"Temperature": temperatures_dict}))
+
+        temperature_schema = TemperatureSchema(many=False)
+        temperatures_json = temperature_schema.dump(temperatures)
+
+        #return make_response(jsonify({"Temperature": temperatures_json}))
+        temperatures_dict = [temperature_schema.dump(temperature) for temperature in temperatures]
+        return make_response(jsonify({"Temperature": temperatures_dict}))
+    return make_response(jsonify({"Temperature": None}),404)
 
 @app.route('/Temperature', methods = ['POST'])
 def create_temperature():
@@ -400,6 +421,7 @@ def get_orien(id):
 @app.route('/Orientation', methods = ['POST'])
 def create_orientation():
     data = request.get_json()
+
     orientation_schema = OrientationSchema()
     orin = orientation_schema.load(data,partial=True)
     result = orientation_schema.dump(orin.create())

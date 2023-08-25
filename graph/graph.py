@@ -7,8 +7,10 @@ import pandas as pd
 
 BASE_ADDRESS = 'http://192.168.3.213:5000'
 path_api = 'Temperature'
+sub_area = '/date'
+path_variables = '?LoadDate=2023-08-24T00:00:00'
 #x = requests.get('https://h4motion.victorkrogh.dk/api/v1/device/sessions/8EC325DE-A87F-43F5-B1B8-69437593895B/humidity')
-x = requests.get(f'{BASE_ADDRESS}/{path_api}')
+x = requests.get(f'{BASE_ADDRESS}/{path_api}{sub_area}{path_variables}')
 data_json = x.content
 # print(data_json)
 data = json.loads(data_json)
