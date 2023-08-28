@@ -300,7 +300,7 @@ def get_temp_by_date():
         # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
         # temperatures = Temperature.query.filter(load_date < load_end_date).all()
         temperatures = Temperature.query.filter(load_date < cast(Temperature.LoadDate, DateTime), 
-                                                cast(Temperature.LoadDate, DateTime) < load_end_date).all()
+        cast(Temperature.LoadDate, DateTime) < load_end_date).all()
 
         print(load_date)
         print(load_end_date)
@@ -344,6 +344,50 @@ def create_accelerometer():
     temp = accelerometer_schema.load(data,partial=True)
     result = accelerometer_schema.dump(temp.create())
     return make_response(jsonify({"Accelerometer": result}),200)
+@app.route('/Accelerometer/date', methods=['GET'])
+def get_accelerometer_by_date():
+    load_date = None
+    load_end_date = None
+    if(request.args.get('LoadDate') != None):
+        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    
+    if(request.args.get('LoadEndDate') != None):
+        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    # Print sample values of LoadDate column
+    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
+
+    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+    
+    if(load_date or load_end_date):
+        if(load_date):
+            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
+        else:
+            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+        if(load_end_date): 
+            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
+        else: 
+            load_end_date = cast(datetime.now(), DateTime)
+        # - startdate - enddate - startdate&enddate
+        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
+        temperatures = Accelerometer.query.filter(load_date < cast(Accelerometer.LoadDate, DateTime), 
+        cast(Accelerometer.LoadDate, DateTime) < load_end_date).all()
+
+        print(load_date)
+        print(load_end_date)
+        print(load_date < load_end_date)
+
+
+        accelerometer_schema = AccelerometerSchema(many=False)
+        temperatures_json = accelerometer_schema.dump(temperatures)
+
+        #return make_response(jsonify({"Temperature": temperatures_json}))
+        temperatures_dict = [accelerometer_schema.dump(temperature) for temperature in temperatures]
+        return make_response(jsonify({"Accelerometer": temperatures_dict}))
+    return make_response(jsonify({"Accelerometer": None}),404)
+
 #endregion
 
 
@@ -381,6 +425,49 @@ def create_comp():
     comp = comp_schema.load(data,partial=True)
     result = comp_schema.dump(comp.create())
     return make_response(jsonify({"Compass": result}),200)
+@app.route('/Compass/date', methods=['GET'])
+def get_compass_by_date():
+    load_date = None
+    load_end_date = None
+    if(request.args.get('LoadDate') != None):
+        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    
+    if(request.args.get('LoadEndDate') != None):
+        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    # Print sample values of LoadDate column
+    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
+
+    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+    
+    if(load_date or load_end_date):
+        if(load_date):
+            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
+        else:
+            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+        if(load_end_date): 
+            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
+        else: 
+            load_end_date = cast(datetime.now(), DateTime)
+        # - startdate - enddate - startdate&enddate
+        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
+        temperatures = Compass.query.filter(load_date < cast(Compass.LoadDate, DateTime), 
+        cast(Compass.LoadDate, DateTime) < load_end_date).all()
+
+        print(load_date)
+        print(load_end_date)
+        print(load_date < load_end_date)
+
+
+        compass_schema = CompassSchema(many=False)
+        temperatures_json = compass_schema.dump(temperatures)
+
+        #return make_response(jsonify({"Temperature": temperatures_json}))
+        temperatures_dict = [compass_schema.dump(temperature) for temperature in temperatures]
+        return make_response(jsonify({"Compass": temperatures_dict}))
+    return make_response(jsonify({"Compass": None}),404)
 #endregion
 
 #region Gyroscope routes
@@ -448,6 +535,50 @@ def create_humidity():
     humidity = humidity_schema.load(data,partial=True)
     result = humidity_schema.dump(humidity.create())
     return make_response(jsonify({"Humidity": result}),200)
+@app.route('/Humidity/date', methods=['GET'])
+def get_humidity_by_date():
+    load_date = None
+    load_end_date = None
+    if(request.args.get('LoadDate') != None):
+        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    
+    if(request.args.get('LoadEndDate') != None):
+        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    # Print sample values of LoadDate column
+    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
+
+    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+    
+    if(load_date or load_end_date):
+        if(load_date):
+            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
+        else:
+            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+        if(load_end_date): 
+            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
+        else: 
+            load_end_date = cast(datetime.now(), DateTime)
+        # - startdate - enddate - startdate&enddate
+        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
+        temperatures = Humidity.query.filter(load_date < cast(Humidity.LoadDate, DateTime), 
+        cast(Humidity.LoadDate, DateTime) < load_end_date).all()
+
+        print(load_date)
+        print(load_end_date)
+        print(load_date < load_end_date)
+
+
+        humidity_schema = HumiditySchema(many=False)
+        temperatures_json = humidity_schema.dump(temperatures)
+
+        #return make_response(jsonify({"Temperature": temperatures_json}))
+        temperatures_dict = [humidity_schema.dump(temperature) for temperature in temperatures]
+        return make_response(jsonify({"Humidity": temperatures_dict}))
+    return make_response(jsonify({"Humidity": None}),404)
+
 #endregion
 
 #region Humidity region
@@ -470,4 +601,47 @@ def create_pressure():
     pressure = pressure_schema.load(data,partial=True)
     result = pressure_schema.dump(pressure.create())
     return make_response(jsonify({"Pressure": result}),200)
+@app.route('/Pressure/date', methods=['GET'])
+def get_pressure_by_date():
+    load_date = None
+    load_end_date = None
+    if(request.args.get('LoadDate') != None):
+        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    
+    if(request.args.get('LoadEndDate') != None):
+        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
+        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    # Print sample values of LoadDate column
+    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
+
+    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+    
+    if(load_date or load_end_date):
+        if(load_date):
+            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
+        else:
+            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+        if(load_end_date): 
+            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
+        else: 
+            load_end_date = cast(datetime.now(), DateTime)
+        # - startdate - enddate - startdate&enddate
+        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
+        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
+        temperatures = Pressure.query.filter(load_date < cast(Pressure.LoadDate, DateTime), 
+        cast(Pressure.LoadDate, DateTime) < load_end_date).all()
+
+        print(load_date)
+        print(load_end_date)
+        print(load_date < load_end_date)
+
+
+        pressure_schema = PressureSchema(many=False)
+        temperatures_json = pressure_schema.dump(temperatures)
+
+        #return make_response(jsonify({"Temperature": temperatures_json}))
+        temperatures_dict = [pressure_schema.dump(temperature) for temperature in temperatures]
+        return make_response(jsonify({"Pressure": temperatures_dict}))
+    return make_response(jsonify({"Pressure": None}),404)
 #endregion
