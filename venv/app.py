@@ -1,9 +1,12 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, render_template_string
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from marshmallow import fields
 from datetime import datetime
 from sqlalchemy import cast, DateTime, Date
+import graph.graph_temp as p_temp
+import graph.graph_accelerometer as acc_m 
+#from graph/graph_temp import plot_to_img as pti
 
 
 app = Flask(__name__)
@@ -644,4 +647,17 @@ def get_pressure_by_date():
         temperatures_dict = [pressure_schema.dump(temperature) for temperature in temperatures]
         return make_response(jsonify({"Pressure": temperatures_dict}))
     return make_response(jsonify({"Pressure": None}),404)
+#endregion
+
+#region plot
+@app.route('/plot')
+def plot():
+    img_b64 = p_temp.plot_to_img()
+
+    html = f'<img src ="data:image/png;base64,{img_b64}" class="blog-image">'
+    return render_template_string(html)
+
+
+
+
 #endregion
