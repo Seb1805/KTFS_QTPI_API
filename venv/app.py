@@ -651,10 +651,12 @@ def get_pressure_by_date():
 
 #region plot
 @app.route('/plot')
-def plot():
-    img_b64 = p_temp.plot_to_img()
+async def plot():
+    img_b64 = await p_temp.main()
 
     html = f'<img src ="data:image/png;base64,{img_b64}" class="blog-image">'
+    if img_b64:
+        del img_b64
     return render_template_string(html)
 
 

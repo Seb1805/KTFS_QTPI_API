@@ -55,13 +55,13 @@ def init():
     plt.ylabel('Pitch,Roll, Yaw')
 
     plt.legend()  # add a legend to show the color coding
+    plt.show()
     return plt
-    #    plt.show()
+
 
     import matplotlib.pyplot as plt
     import matplotlib.dates as mLoadDates
 
-print("beskidte hund")
 # Convert 'LoadDate' column to LoadDatetime type
 #df['timestamp'] = pd.to_datetime(df['timestamp'])
 

@@ -1,18 +1,35 @@
 
-import requests #used to make api call
+#import requests #used to make api call
+import requests_async as requests
 import json #json lib
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mLoadDates
+import sys
+import threading
+from timer import timed
 
 
+async def main():
+    img = await plot_to_img()
+    return img
 
-def init():
+# sys.setrecursionlimit(50000)    # adjust numbers
+# threading.stack_size(134217728)   # for your needs
+
+# main_thread = threading.Thread(target=main)
+# main_thread.start()
+# main_thread.join()
+@timed
+async def init():
+    start = time.time()
     BASE_ADDRESS = 'http://192.168.3.213:5000'
     path_api = 'Temperature'
     sub_area = '/date'
     path_variables = '?LoadDate=2023-08-24T00:00:00'
     #x = requests.get('https://h4motion.victorkrogh.dk/api/v1/device/sessions/8EC325DE-A87F-43F5-B1B8-69437593895B/humidity')
-    x = requests.get(f'{BASE_ADDRESS}/{path_api}{sub_area}{path_variables}')
+    x = await requests.get(f'{BASE_ADDRESS}/{path_api}{sub_area}{path_variables}')
     data_json = x.content
     # print(data_json)
     data = json.loads(data_json)
@@ -23,29 +40,20 @@ def init():
     # del df["humidityPercentage"]
     # del df["created"]
     # del df["modified"]
-    print(df)
 
-    import matplotlib.pyplot as plt
-    import matplotlib.dates as mLoadDates
 
     # Convert 'LoadDate' column to LoadDatetime type
     df['LoadDate'] = pd.to_datetime(df['LoadDate'])
-    print(df['LoadDate'])
     # Set 'LoadDate' as the index
     df.set_index('LoadDate', inplace=True)
 
     # Plot the data
     plt.figure(figsize=(10, 6))
+    #plt.switch_backend('agg')
     plt.plot(df.index, df['Temperature'])
 
-    # Format the x-axis to display LoadDates properly
-    # plt.gca().xaxis.set_major_formatter(mLoadDates.DateFormatter('%Y-%m-%d'))
     plt.gca().xaxis.set_major_formatter(mLoadDates.DateFormatter('%Y-%m-%d %H:%M:%S'))
-    #plt.gca().xaxis.set_major_formattermyFmt = mLoadDates("%Y-%m-%d %H:%M:%S")
-    # plt.gca().xaxis.set_major_formatter(myFmt))
-    # myFmt = mLoadDates("%Y-%m-%d %H:%M:%S")
-    # plt.gca().xaxis.set_major_formatter(myFmt)
-    # plt.gca().xaxis.set_major_locator(mLoadDates.DayLocator(interval=500))
+
     plt.gca().xaxis.set_major_locator(mLoadDates.MinuteLocator(interval=250))
 
     plt.gcf().autofmt_xdate()  # rotates x-axis labels to fit them better
@@ -53,24 +61,28 @@ def init():
     plt.title('Temperature over Time')
     plt.xlabel('LoadDate')
     plt.ylabel('Temperature')
+    stop = time.time()
+    print(stop - start)
 
 #plt.show()
 
 import io
 import base64
 
-def plot_to_img():
-    init()
+
+async def plot_to_img():
+    start = time.time()
+    await init()
     img = io.BytesIO()
     plt.savefig(img,format='png')
     img.seek(0)
 
     img_b64 = base64.b64encode(img.getvalue()).decode()
-
+    if img:
+        del img
     return img_b64
 
-import matplotlib.pyplot as plt
-import matplotlib.dates as mLoadDates
+
 
 # Convert 'LoadDate' column to LoadDatetime type
 #df['timestamp'] = pd.to_datetime(df['timestamp'])
