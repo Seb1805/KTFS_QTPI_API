@@ -6,11 +6,13 @@ import time
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mLoadDates
+import matplotlib.style as mplstyle
 import sys
 import threading
-from timer import timed
+import asyncio
 
 
+mplstyle.use('fast')
 async def main():
     img = await plot_to_img()
     return img
@@ -21,7 +23,7 @@ async def main():
 # main_thread = threading.Thread(target=main)
 # main_thread.start()
 # main_thread.join()
-@timed
+
 async def init():
     start = time.time()
     BASE_ADDRESS = 'http://192.168.3.213:5000'
@@ -29,6 +31,7 @@ async def init():
     sub_area = '/date'
     path_variables = '?LoadDate=2023-08-24T00:00:00'
     #x = requests.get('https://h4motion.victorkrogh.dk/api/v1/device/sessions/8EC325DE-A87F-43F5-B1B8-69437593895B/humidity')
+    #x = await requests.get(f'{BASE_ADDRESS}/{path_api}')
     x = await requests.get(f'{BASE_ADDRESS}/{path_api}{sub_area}{path_variables}')
     data_json = x.content
     # print(data_json)
@@ -48,7 +51,7 @@ async def init():
     df.set_index('LoadDate', inplace=True)
 
     # Plot the data
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 8))
     #plt.switch_backend('agg')
     plt.plot(df.index, df['Temperature'])
 
@@ -63,8 +66,7 @@ async def init():
     plt.ylabel('Temperature')
     stop = time.time()
     print(stop - start)
-
-#plt.show()
+    #plt.show()
 
 import io
 import base64
@@ -74,7 +76,7 @@ async def plot_to_img():
     start = time.time()
     await init()
     img = io.BytesIO()
-    plt.savefig(img,format='png')
+    plt.savefig(img,format='jpg')
     img.seek(0)
 
     img_b64 = base64.b64encode(img.getvalue()).decode()
@@ -82,7 +84,7 @@ async def plot_to_img():
         del img
     return img_b64
 
-
+#asyncio.run(plot_to_img())
 
 # Convert 'LoadDate' column to LoadDatetime type
 #df['timestamp'] = pd.to_datetime(df['timestamp'])

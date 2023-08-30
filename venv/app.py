@@ -21,32 +21,7 @@ from urllib.parse import urlparse, parse_qs
 
 
 
-###Models####
-
-#region Produkt eksempel
-class Product(db.Model):
-    __tablename__ = "products"
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(20))
-    productDescription = db.Column(db.String(100))
-    productBrand = db.Column(db.String(20))
-    price = db.Column(db.Integer)
-
-    def __init__(self,title,productDescription,productBrand,price):
-        self.title = title
-        self.productDescription = productDescription
-        self.productBrand = productBrand
-        self.price = price
-    def __repr__(self):
-        return '' % self.id
-
-    def create(self):
-    #   with app.app_context():
-        db.session.add(self)
-        db.session.commit()
-        return self
-#endregion
-
+#region Models
 
 class Temperature(db.Model):
     __tablename__ = "Temperature"
@@ -168,19 +143,12 @@ class Pressure(db.Model):
         db.session.commit()
         return self
 
+#endregion
+
 # with app.app_context():
 #     db.create_all()
 
-class ProductSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Product
-        sqla_session = db.session
-    id = fields.Number(dump_only=True)
-    title = fields.String(required=True)
-    productDescription = fields.String(required=True)
-    productBrand = fields.String(required=True)
-    price = fields.Number(required=True)
-
+#region Schemas
 class TemperatureSchema(ma.SQLAlchemyAutoSchema):
     class Meta():
         model = Temperature
@@ -218,9 +186,6 @@ class OrientationSchema(ma.SQLAlchemyAutoSchema):
         model = Orientation
         sqla_session = db.session
         load_instance = True
-    # id = fields.Number(dump_only=True)
-    # LoadDate = fields.DateTime(dump_only=True)
-    # Temperature = fields.Float(required = True)
 
 
 class PressureSchema(ma.SQLAlchemyAutoSchema):
@@ -228,13 +193,7 @@ class PressureSchema(ma.SQLAlchemyAutoSchema):
         model = Pressure
         sqla_session = db.session
         load_instance = True
-
-# @app.route('/products', methods = ['GET'])
-# def index():
-#     get_products = Product.query.all()
-#     product_schema = ProductSchema(many=True)
-#     products = product_schema.dump(get_products)
-#     return make_response(jsonify({"product": products}))
+#endregion
 
 #region Temperature routes
 @app.route('/Temperature', methods = ['GET'])
@@ -249,74 +208,16 @@ def get_temp(id):
     temperature_schema = TemperatureSchema(many=False)
     temperatures = temperature_schema.dump(get_temperature)
     return make_response(jsonify({"Temperature": temperatures}))
-# @app.route('/Temperature/date', methods = ['GET'])
-# def get_temp_by_date():
-#     print(request.url)
-
-
-#     # Parse the URL
-#     parsed_url = urlparse(request.url)
-
-#     # Get the query string
-#     query_string = parsed_url.query
-
-#     # Parse the query string and get the parameters as a dictionary
-#     parameters = parse_qs(query_string)
-#     x_date = parameters.get("LoadDate",[""])[0]
-#     print(x_date)
-#     print(Temperature.LoadDate)
-#     #load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
-#     x_date = x_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
-
-#     temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(x_date, '%Y-%m-%d %H:%M:%S')).all()
-
-#     temperature_schema = TemperatureSchema(many=True)
-#     temperatures_json = temperature_schema.dump(temperatures)
-
-#     return make_response(jsonify({"Temperature": temperatures_json}))
 @app.route('/Temperature/date', methods=['GET'])
 def get_temp_by_date():
-    load_date = None
-    load_end_date = None
-    if(request.args.get('LoadDate') != None):
-        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    graph = GenerateGraph(TemperatureSchema, Temperature, request.args.get('StartDate'), request.args.get('EndDate'))
+    if(graph == None):
+        return make_response(jsonify({}),404)
     
-    if(request.args.get('LoadEndDate') != None):
-        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
-    # Print sample values of LoadDate column
-    sample_dates = Temperature.query.with_entities(Temperature.LoadDate).limit(5).all()
-
-    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-    
-    if(load_date or load_end_date):
-        if(load_date):
-            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
-        else:
-            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
-        if(load_end_date): 
-            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
-        else: 
-            load_end_date = cast(datetime.now(), DateTime)
-        # - startdate - enddate - startdate&enddate
-        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
-        temperatures = Temperature.query.filter(load_date < cast(Temperature.LoadDate, DateTime), 
-        cast(Temperature.LoadDate, DateTime) < load_end_date).all()
-
-        print(load_date)
-        print(load_end_date)
-        print(load_date < load_end_date)
+    else:
+        return make_response(graph)
 
 
-        temperature_schema = TemperatureSchema(many=False)
-        temperatures_json = temperature_schema.dump(temperatures)
-
-        #return make_response(jsonify({"Temperature": temperatures_json}))
-        temperatures_dict = [temperature_schema.dump(temperature) for temperature in temperatures]
-        return make_response(jsonify({"Temperature": temperatures_dict}))
-    return make_response(jsonify({"Temperature": None}),404)
 
 @app.route('/Temperature', methods = ['POST'])
 def create_temperature():
@@ -349,64 +250,15 @@ def create_accelerometer():
     return make_response(jsonify({"Accelerometer": result}),200)
 @app.route('/Accelerometer/date', methods=['GET'])
 def get_accelerometer_by_date():
-    load_date = None
-    load_end_date = None
-    if(request.args.get('LoadDate') != None):
-        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    graph = GenerateGraph(AccelerometerSchema, Accelerometer, request.args.get('StartDate'), request.args.get('EndDate'))
+    if(graph == None):
+        return make_response(jsonify({}),404)
     
-    if(request.args.get('LoadEndDate') != None):
-        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
-    # Print sample values of LoadDate column
-    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
+    else:
+        return make_response(graph)
 
-    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
     
-    if(load_date or load_end_date):
-        if(load_date):
-            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
-        else:
-            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
-        if(load_end_date): 
-            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
-        else: 
-            load_end_date = cast(datetime.now(), DateTime)
-        # - startdate - enddate - startdate&enddate
-        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
-        temperatures = Accelerometer.query.filter(load_date < cast(Accelerometer.LoadDate, DateTime), 
-        cast(Accelerometer.LoadDate, DateTime) < load_end_date).all()
-
-        print(load_date)
-        print(load_end_date)
-        print(load_date < load_end_date)
-
-
-        accelerometer_schema = AccelerometerSchema(many=False)
-        temperatures_json = accelerometer_schema.dump(temperatures)
-
-        #return make_response(jsonify({"Temperature": temperatures_json}))
-        temperatures_dict = [accelerometer_schema.dump(temperature) for temperature in temperatures]
-        return make_response(jsonify({"Accelerometer": temperatures_dict}))
-    return make_response(jsonify({"Accelerometer": None}),404)
-
 #endregion
-
-
-@app.route('/products', methods = ['GET'])
-def index():
-    get_products = Product.query.all()
-    product_schema = ProductSchema(many=True)
-    products = product_schema.dump(get_products)
-    return make_response(jsonify({"product": products}))
-@app.route('/products', methods = ['POST'])
-def create_product():
-    data = request.get_json()
-    # product_schema = ProductSchema()
-    # product = product_schema.load(data)
-    # result = product_schema.dump(product.create())
-    return make_response(jsonify({"product": data}),200)
 
 #region Compass routes
 @app.route('/Compass', methods = ['GET'])
@@ -430,47 +282,12 @@ def create_comp():
     return make_response(jsonify({"Compass": result}),200)
 @app.route('/Compass/date', methods=['GET'])
 def get_compass_by_date():
-    load_date = None
-    load_end_date = None
-    if(request.args.get('LoadDate') != None):
-        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    graph = GenerateGraph(CompassSchema, Compass, request.args.get('StartDate'), request.args.get('EndDate'))
+    if(graph == None):
+        return make_response(jsonify({}),404)
     
-    if(request.args.get('LoadEndDate') != None):
-        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
-    # Print sample values of LoadDate column
-    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
-
-    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-    
-    if(load_date or load_end_date):
-        if(load_date):
-            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
-        else:
-            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
-        if(load_end_date): 
-            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
-        else: 
-            load_end_date = cast(datetime.now(), DateTime)
-        # - startdate - enddate - startdate&enddate
-        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
-        temperatures = Compass.query.filter(load_date < cast(Compass.LoadDate, DateTime), 
-        cast(Compass.LoadDate, DateTime) < load_end_date).all()
-
-        print(load_date)
-        print(load_end_date)
-        print(load_date < load_end_date)
-
-
-        compass_schema = CompassSchema(many=False)
-        temperatures_json = compass_schema.dump(temperatures)
-
-        #return make_response(jsonify({"Temperature": temperatures_json}))
-        temperatures_dict = [compass_schema.dump(temperature) for temperature in temperatures]
-        return make_response(jsonify({"Compass": temperatures_dict}))
-    return make_response(jsonify({"Compass": None}),404)
+    else:
+        return make_response(graph)
 #endregion
 
 #region Gyroscope routes
@@ -518,7 +335,7 @@ def create_orientation():
     return make_response(jsonify({"Orientation": result}),200)
 #endregion
 
-#region Humidity region
+#region Humidity routes
 @app.route('/Humidity', methods = ['GET'])
 def get_hunidities():
     get_humidity = Humidity.query.all()
@@ -540,51 +357,16 @@ def create_humidity():
     return make_response(jsonify({"Humidity": result}),200)
 @app.route('/Humidity/date', methods=['GET'])
 def get_humidity_by_date():
-    load_date = None
-    load_end_date = None
-    if(request.args.get('LoadDate') != None):
-        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    graph = GenerateGraph(HumiditySchema, Humidity, request.args.get('StartDate'), request.args.get('EndDate'))
+    if(graph == None):
+        return make_response(jsonify({}),404)
     
-    if(request.args.get('LoadEndDate') != None):
-        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
-    # Print sample values of LoadDate column
-    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
-
-    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-    
-    if(load_date or load_end_date):
-        if(load_date):
-            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
-        else:
-            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
-        if(load_end_date): 
-            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
-        else: 
-            load_end_date = cast(datetime.now(), DateTime)
-        # - startdate - enddate - startdate&enddate
-        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
-        temperatures = Humidity.query.filter(load_date < cast(Humidity.LoadDate, DateTime), 
-        cast(Humidity.LoadDate, DateTime) < load_end_date).all()
-
-        print(load_date)
-        print(load_end_date)
-        print(load_date < load_end_date)
-
-
-        humidity_schema = HumiditySchema(many=False)
-        temperatures_json = humidity_schema.dump(temperatures)
-
-        #return make_response(jsonify({"Temperature": temperatures_json}))
-        temperatures_dict = [humidity_schema.dump(temperature) for temperature in temperatures]
-        return make_response(jsonify({"Humidity": temperatures_dict}))
-    return make_response(jsonify({"Humidity": None}),404)
+    else:
+        return make_response(graph)
 
 #endregion
 
-#region Humidity region
+#region Pressure routes
 @app.route('/Pressure', methods = ['GET'])
 def get_pressures():
     get_pressure = Pressure.query.all()
@@ -606,47 +388,12 @@ def create_pressure():
     return make_response(jsonify({"Pressure": result}),200)
 @app.route('/Pressure/date', methods=['GET'])
 def get_pressure_by_date():
-    load_date = None
-    load_end_date = None
-    if(request.args.get('LoadDate') != None):
-        load_date = request.args.get('LoadDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_date = load_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    graph = GenerateGraph(PressureSchema, Pressure, request.args.get('StartDate'), request.args.get('EndDate'))
+    if(graph == None):
+        return make_response(jsonify({}),404)
     
-    if(request.args.get('LoadEndDate') != None):
-        load_end_date = request.args.get('LoadEndDate')  # Assuming 'LoadDate' is the parameter to filter by
-        load_end_date = load_end_date.replace('T', ' ')  # Replace 'T' with a space to separate date and time
-    # Print sample values of LoadDate column
-    #sample_dates = Temperature.query.with_entities(Hunidity.LoadDate).limit(5).all()
-
-    #temperatures = Temperature.query.filter(cast(Temperature.LoadDate, Date) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-    
-    if(load_date or load_end_date):
-        if(load_date):
-            load_date = datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')
-        else:
-            load_date = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
-        if(load_end_date): 
-            load_end_date = datetime.strptime(load_end_date, '%Y-%m-%d %H:%M:%S')
-        else: 
-            load_end_date = cast(datetime.now(), DateTime)
-        # - startdate - enddate - startdate&enddate
-        # temperatures = Temperature.query.filter(cast(Temperature.LoadDate, DateTime) >= datetime.strptime(load_date, '%Y-%m-%d %H:%M:%S')).all()
-        # temperatures = Temperature.query.filter(load_date < load_end_date).all()
-        temperatures = Pressure.query.filter(load_date < cast(Pressure.LoadDate, DateTime), 
-        cast(Pressure.LoadDate, DateTime) < load_end_date).all()
-
-        print(load_date)
-        print(load_end_date)
-        print(load_date < load_end_date)
-
-
-        pressure_schema = PressureSchema(many=False)
-        temperatures_json = pressure_schema.dump(temperatures)
-
-        #return make_response(jsonify({"Temperature": temperatures_json}))
-        temperatures_dict = [pressure_schema.dump(temperature) for temperature in temperatures]
-        return make_response(jsonify({"Pressure": temperatures_dict}))
-    return make_response(jsonify({"Pressure": None}),404)
+    else:
+        return make_response(graph)
 #endregion
 
 #region plot
@@ -662,4 +409,35 @@ async def plot():
 
 
 
+#endregion
+
+#region HelperFunctions
+def GenerateGraph(schema, chosenClass, startDate = None, endDate = None):
+
+    if(startDate != None):
+        startDate = startDate.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+    
+    if(endDate != None):
+        endDate = endDate.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+
+    if(startDate or endDate):
+        if(startDate):
+            startDate = datetime.strptime(startDate, '%Y-%m-%d %H:%M:%S')
+        else:
+            startDate = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+        if(endDate): 
+            endDate = datetime.strptime(endDate, '%Y-%m-%d %H:%M:%S')
+        else: 
+            endDate = cast(datetime.now(), DateTime)
+
+        filteredData = chosenClass.query.filter(startDate < cast(chosenClass.LoadDate, DateTime), 
+                       cast(chosenClass.LoadDate, DateTime) < endDate).all()
+
+        created_schema = schema(many=False)
+
+        created_dict = [created_schema.dump(temperature) for temperature in filteredData]
+        return jsonify(created_dict)
+    else: 
+        return jsonify()
+    
 #endregion
