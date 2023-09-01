@@ -1,11 +1,15 @@
 from flask import Flask, request, jsonify, make_response, render_template_string
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import text
 from flask_marshmallow import Marshmallow
 from marshmallow import fields
 from datetime import datetime
 from sqlalchemy import cast, DateTime, Date
 import graph.graph_temp as p_temp
-import graph.graph_accelerometer as acc_m 
+import graph.graph_accelerometer as graphAccelerometer
+# import graph.graph_humidity as graphHumidity
+# import graph.graph_pressure as graphPressure
+import graph.graph_compass as graphCompass
 #from graph/graph_temp import plot_to_img as pti
 
 
@@ -100,6 +104,8 @@ class Humidity(db.Model):
     LoadDate = db.Column(db.DateTime)
     Humidity = db.Column(db.Float())
 
+    def getName(self):
+        return __tablename__
     def __init__(self,Humidity):
         self.Humidity = Humidity
     def __repr__(self):
@@ -216,6 +222,17 @@ def get_temp_by_date():
     
     else:
         return make_response(graph)
+    
+
+@app.route('/Temperature/plot')
+async def get_temperature_plot():
+    img_b64 = await p_temp.main('Temperature')
+
+    html = f'<img src ="data:image/png;base64,{img_b64}" class="blog-image">'
+    if img_b64:
+        del img_b64
+    return render_template_string(html)
+
 
 
 
@@ -241,13 +258,6 @@ def get_accel(id):
     accelerometer_schema = AccelerometerSchema(many=False)
     accelerometers = accelerometer_schema.dump(get_accelerometer)
     return make_response(jsonify({"Accelerometer": accelerometers}))
-@app.route('/Accelerometer', methods = ['POST'])
-def create_accelerometer():
-    data = request.get_json()
-    accelerometer_schema = AccelerometerSchema()
-    temp = accelerometer_schema.load(data,partial=True)
-    result = accelerometer_schema.dump(temp.create())
-    return make_response(jsonify({"Accelerometer": result}),200)
 @app.route('/Accelerometer/date', methods=['GET'])
 def get_accelerometer_by_date():
     graph = GenerateGraph(AccelerometerSchema, Accelerometer, request.args.get('StartDate'), request.args.get('EndDate'))
@@ -257,7 +267,25 @@ def get_accelerometer_by_date():
     else:
         return make_response(graph)
 
-    
+
+@app.route('/Accelerometer', methods = ['POST'])
+def create_accelerometer():
+    data = request.get_json()
+    accelerometer_schema = AccelerometerSchema()
+    temp = accelerometer_schema.load(data,partial=True)
+    result = accelerometer_schema.dump(temp.create())
+    return make_response(jsonify({"Accelerometer": result}),200)
+
+@app.route('/Accelerometer/plot')
+async def get_accelerometer_plot():
+    img_b64 = await graphAccelerometer.main()
+
+    html = f'<img src ="data:image/png;base64,{img_b64}" class="blog-image">'
+    if img_b64:
+        del img_b64
+    return render_template_string(html)
+
+
 #endregion
 
 #region Compass routes
@@ -288,6 +316,16 @@ def get_compass_by_date():
     
     else:
         return make_response(graph)
+    
+@app.route('/Compass/plot')
+async def get_compass_plot():
+    img_b64 = await p_temp.main('Compass', 'DegreesToNorth')
+
+    html = f'<img src ="data:image/png;base64,{img_b64}" class="blog-image">'
+    if img_b64:
+        del img_b64
+    return render_template_string(html)
+
 #endregion
 
 #region Gyroscope routes
@@ -363,6 +401,14 @@ def get_humidity_by_date():
     
     else:
         return make_response(graph)
+@app.route('/Humidity/plot')
+async def plot():
+    img_b64 = await p_temp.main('Humidity')
+
+    html = f'<img src ="data:image/png;base64,{img_b64}" class="blog-image">'
+    if img_b64:
+        del img_b64
+    return render_template_string(html)
 
 #endregion
 
@@ -394,26 +440,21 @@ def get_pressure_by_date():
     
     else:
         return make_response(graph)
-#endregion
-
-#region plot
-@app.route('/plot')
-async def plot():
-    img_b64 = await p_temp.main()
+    
+@app.route('/Pressure/plot')
+async def get_pressure_plot():
+    img_b64 = await p_temp.main('Pressure')
 
     html = f'<img src ="data:image/png;base64,{img_b64}" class="blog-image">'
     if img_b64:
         del img_b64
     return render_template_string(html)
 
-
-
-
 #endregion
+
 
 #region HelperFunctions
 def GenerateGraph(schema, chosenClass, startDate = None, endDate = None):
-
     if(startDate != None):
         startDate = startDate.replace('T', ' ')  # Replace 'T' with a space to separate date and time
     
@@ -436,7 +477,8 @@ def GenerateGraph(schema, chosenClass, startDate = None, endDate = None):
         created_schema = schema(many=False)
 
         created_dict = [created_schema.dump(temperature) for temperature in filteredData]
-        return jsonify(created_dict)
+
+        return jsonify({chosenClass.__tablename__ : created_dict})
     else: 
         return jsonify()
     

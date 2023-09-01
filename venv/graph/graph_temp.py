@@ -10,11 +10,16 @@ import matplotlib.style as mplstyle
 import sys
 import threading
 import asyncio
+import gc
+import datetime
+import os
+from dotenv import load_dotenv as denv
 
+denv()
 
 mplstyle.use('fast')
-async def main():
-    img = await plot_to_img()
+async def main(path_api, y_akse = None):
+    img = await plot_to_img(path_api, y_akse)
     return img
 
 # sys.setrecursionlimit(50000)    # adjust numbers
@@ -24,113 +29,70 @@ async def main():
 # main_thread.start()
 # main_thread.join()
 
-async def init():
-    start = time.time()
-    BASE_ADDRESS = 'http://192.168.3.213:5000'
-    path_api = 'Temperature'
+async def init(path_api, y_akse):
+    BASE_ADDRESS = f'http://{os.getenv("SERVER_IP")}:{os.getenv("PORT")}'
+    # path_api = 'Temperature'
     sub_area = '/date'
-    path_variables = '?LoadDate=2023-08-24T00:00:00'
+    currentDate = datetime.datetime.now()
+    weekago = currentDate - datetime.timedelta(days=7)
+    
+    path_variables = f'?StartDate={weekago.strftime("%Y-%m-%d")}T00:00:00&EndDate={currentDate.strftime("%Y-%m-%dT%H:%M:%S")}'
     #x = requests.get('https://h4motion.victorkrogh.dk/api/v1/device/sessions/8EC325DE-A87F-43F5-B1B8-69437593895B/humidity')
     #x = await requests.get(f'{BASE_ADDRESS}/{path_api}')
+
     x = await requests.get(f'{BASE_ADDRESS}/{path_api}{sub_area}{path_variables}')
+    # print(x)
     data_json = x.content
     # print(data_json)
     data = json.loads(data_json)
     # print(data["Temperature"])
-    df = pd.DataFrame(data["Temperature"])
+    df = pd.DataFrame(data[path_api])
     del df["ID"]
-    # del df["deviceSessionId"]
-    # del df["humidityPercentage"]
-    # del df["created"]
-    # del df["modified"]
 
 
-    # Convert 'LoadDate' column to LoadDatetime type
+    # Convert 'LoadDate' column to Datetime type
     df['LoadDate'] = pd.to_datetime(df['LoadDate'])
     # Set 'LoadDate' as the index
     df.set_index('LoadDate', inplace=True)
 
     # Plot the data
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(10, 6))
     #plt.switch_backend('agg')
-    plt.plot(df.index, df['Temperature'])
+    if(y_akse == None):
+        plt.plot(df.index, df[path_api])
+    else:
+        plt.plot(df.index, df[y_akse])
+    plt.gca().xaxis.set_major_formatter(mLoadDates.DateFormatter('%m/%d %H:%M:%S'))
 
-    plt.gca().xaxis.set_major_formatter(mLoadDates.DateFormatter('%Y-%m-%d %H:%M:%S'))
-
-    plt.gca().xaxis.set_major_locator(mLoadDates.MinuteLocator(interval=250))
+    plt.gca().xaxis.set_major_locator(mLoadDates.HourLocator(interval=12))
 
     plt.gcf().autofmt_xdate()  # rotates x-axis labels to fit them better
 
-    plt.title('Temperature over Time')
-    plt.xlabel('LoadDate')
-    plt.ylabel('Temperature')
+    plt.title(f'{path_api} over Time')
+    plt.xlabel('Date and time')
+    if(y_akse == None):
+        plt.ylabel(path_api)
+    else:
+        plt.ylabel(y_akse)
     stop = time.time()
-    print(stop - start)
     #plt.show()
+    gc.collect() # collect the trash
 
 import io
 import base64
 
 
-async def plot_to_img():
-    start = time.time()
-    await init()
+async def plot_to_img(path_api, y_akse):
+    await init(path_api, y_akse)
     img = io.BytesIO()
     plt.savefig(img,format='jpg')
     img.seek(0)
 
     img_b64 = base64.b64encode(img.getvalue()).decode()
     if img:
-        del img
+        del img #remove ref
+        gc.collect() #collect the trash
     return img_b64
 
 #asyncio.run(plot_to_img())
-
-# Convert 'LoadDate' column to LoadDatetime type
-#df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-# Set 'LoadDate' as the index
-# df.set_index('timestamp', inplace=True)
-
-# # Plot the data
-# plt.figure(figsize=(10, 6))
-# plt.plot(df.index, df['temperatureCelsius'])
-
-# # Format the x-axis to display LoadDates properly
-# plt.gca().xaxis.set_major_formatter(mLoadDates.DateFormatter('%Y-%m-%d'))
-# plt.gca().xaxis.set_major_locator(mLoadDates.DayLocator(interval=10))
-
-# plt.gcf().autofmt_xdate()  # rotates x-axis labels to fit them better
-
-# plt.title('Temperature over Time')
-# plt.xlabel('timestamp')
-# plt.ylabel('temperatureCelsius')
-
-# plt.show()
-
-# def tempfuntion(path_api):
-#     global BASE_ADDRESS
-#     # data = get_data_func()
-
-#     # json_str = format_json_func(data)
-    
-#     # json_object = json.loads(json_str)
-
-#     print(x.status_code)
-#     #requests.post(BASE_ADDRESS + "/" + path_api,json = json_object)
-#     if x.status_code == 200:
-#         print (x.json())
-#     #print(x.body)
-
-# while True:
-#     #Miljø
-#     tempfuntion('Temperature')
-#     tempfuntion('Pressure')
-#     tempfuntion('Humidity')
-#     time.sleep(5)
-#     #IMU DegreesToNorth
-#     # tempfuntion('Accelerometer',sense.get_accelerometer, lambda data : '{"Pitch" :' + str(data["pitch"]) + ', "Roll" :' + str(data["roll"]) + ', "Yaw" :' + str(data["yaw"]) + '}')
-#     # tempfuntion('Compass',sense.get_compass, lambda data : '{"DegreesToNorth" :' + str(data) + '}')
-#     #tempfuntion('Accelerometer',sense.get_accelerometer, lambda data : '{"Pitch" :' + str(data["pitch"]) + ', "Roll" :' + str(data["roll"]) + ', "Yaw" :' + str(data["yaw"]) + '}')
-#     #tempfuntion('Accelerometer',sense.get_accelerometer, lambda data : '{"Pitch" :' + str(data["pitch"]) + ', "Roll" :' + str(data["roll"]) + ', "Yaw" :' + str(data["yaw"]) + '}')
 

@@ -3,8 +3,17 @@ import requests #used to make api call
 import json #json lib
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mLoadDates
+import matplotlib.style as mplstyle
 
-def init():
+mplstyle.use('fast')
+async def main():
+    img = await plot_to_img()
+    return img
+
+
+async def init():
 
     BASE_ADDRESS = 'http://192.168.3.213:5000'
     path_api = 'Compass'
@@ -55,8 +64,27 @@ def init():
 
     plt.show()
 
-import matplotlib.pyplot as plt
-import matplotlib.dates as mLoadDates
+import io
+import base64
+
+
+async def plot_to_img():
+    await init()
+    img = io.BytesIO()
+    plt.savefig(img,format='jpg')
+    img.seek(0)
+
+    img_b64 = base64.b64encode(img.getvalue()).decode()
+    if img:
+        del img
+    return img_b64
+
+#asyncio.run(plot_to_img())
+
+
+
+# import matplotlib.pyplot as plt
+# import matplotlib.dates as mLoadDates
 
 # Convert 'LoadDate' column to LoadDatetime type
 #df['timestamp'] = pd.to_datetime(df['timestamp'])
