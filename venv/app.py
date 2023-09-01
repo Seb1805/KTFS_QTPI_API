@@ -216,7 +216,7 @@ def get_temp(id):
     return make_response(jsonify({"Temperature": temperatures}))
 @app.route('/Temperature/date', methods=['GET'])
 def get_temp_by_date():
-    graph = GenerateGraph(TemperatureSchema, Temperature, request.args.get('StartDate'), request.args.get('EndDate'))
+    graph = GenerateDataDateRange(TemperatureSchema, Temperature, request.args.get('StartDate'), request.args.get('EndDate'))
     if(graph == None):
         return make_response(jsonify({}),404)
     
@@ -260,7 +260,7 @@ def get_accel(id):
     return make_response(jsonify({"Accelerometer": accelerometers}))
 @app.route('/Accelerometer/date', methods=['GET'])
 def get_accelerometer_by_date():
-    graph = GenerateGraph(AccelerometerSchema, Accelerometer, request.args.get('StartDate'), request.args.get('EndDate'))
+    graph = GenerateDataDateRange(AccelerometerSchema, Accelerometer, request.args.get('StartDate'), request.args.get('EndDate'))
     if(graph == None):
         return make_response(jsonify({}),404)
     
@@ -310,7 +310,7 @@ def create_comp():
     return make_response(jsonify({"Compass": result}),200)
 @app.route('/Compass/date', methods=['GET'])
 def get_compass_by_date():
-    graph = GenerateGraph(CompassSchema, Compass, request.args.get('StartDate'), request.args.get('EndDate'))
+    graph = GenerateDataDateRange(CompassSchema, Compass, request.args.get('StartDate'), request.args.get('EndDate'))
     if(graph == None):
         return make_response(jsonify({}),404)
     
@@ -395,7 +395,7 @@ def create_humidity():
     return make_response(jsonify({"Humidity": result}),200)
 @app.route('/Humidity/date', methods=['GET'])
 def get_humidity_by_date():
-    graph = GenerateGraph(HumiditySchema, Humidity, request.args.get('StartDate'), request.args.get('EndDate'))
+    graph = GenerateDataDateRange(HumiditySchema, Humidity, request.args.get('StartDate'), request.args.get('EndDate'))
     if(graph == None):
         return make_response(jsonify({}),404)
     
@@ -434,7 +434,7 @@ def create_pressure():
     return make_response(jsonify({"Pressure": result}),200)
 @app.route('/Pressure/date', methods=['GET'])
 def get_pressure_by_date():
-    graph = GenerateGraph(PressureSchema, Pressure, request.args.get('StartDate'), request.args.get('EndDate'))
+    graph = GenerateDataDateRange(PressureSchema, Pressure, request.args.get('StartDate'), request.args.get('EndDate'))
     if(graph == None):
         return make_response(jsonify({}),404)
     
@@ -454,32 +454,43 @@ async def get_pressure_plot():
 
 
 #region HelperFunctions
-def GenerateGraph(schema, chosenClass, startDate = None, endDate = None):
+def GenerateDataDateRange(schema, chosenClass, startDate = None, endDate = None):
+    # Replace 'T' with a space to separate date and time
     if(startDate != None):
-        startDate = startDate.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+        startDate = startDate.replace('T', ' ')
     
+    # Replace 'T' with a space to separate date and time
     if(endDate != None):
-        endDate = endDate.replace('T', ' ')  # Replace 'T' with a space to separate date and time
+        endDate = endDate.replace('T', ' ')
 
+    # Check if either startDate or endDate is provided
     if(startDate or endDate):
+        # If startDate is provided, convert it to datetime object
+        # Otherwise, set it to a default value of 1940-01-01 00:00:00
         if(startDate):
             startDate = datetime.strptime(startDate, '%Y-%m-%d %H:%M:%S')
         else:
             startDate = datetime.strptime("1940-01-01 00:00:00", '%Y-%m-%d %H:%M:%S')
+        
+        # If endDate is provided, convert it to datetime object
+        # Otherwise, set it to the current datetime
         if(endDate): 
             endDate = datetime.strptime(endDate, '%Y-%m-%d %H:%M:%S')
         else: 
             endDate = cast(datetime.now(), DateTime)
 
+        # Filter the data based on the date range
         filteredData = chosenClass.query.filter(startDate < cast(chosenClass.LoadDate, DateTime), 
                        cast(chosenClass.LoadDate, DateTime) < endDate).all()
 
+        # Create a schema object and dump the filtered data into a dictionary
         created_schema = schema(many=False)
-
         created_dict = [created_schema.dump(temperature) for temperature in filteredData]
 
+        # Return the filtered data as a JSON object
         return jsonify({chosenClass.__tablename__ : created_dict})
     else: 
+        # If neither startDate nor endDate is provided, return an empty JSON object
         return jsonify()
     
 #endregion

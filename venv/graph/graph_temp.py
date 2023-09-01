@@ -78,6 +78,8 @@ async def init(path_api, y_akse):
     #plt.show()
     gc.collect() # collect the trash
 
+
+
 import io
 import base64
 
