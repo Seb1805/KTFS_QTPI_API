@@ -27,25 +27,14 @@ async def init():
 
     path_variables = f'?StartDate={weekago.strftime("%Y-%m-%d")}T00:00:00&EndDate={currentDate.strftime("%Y-%m-%dT%H:%M:%S")}'
 
-    #x = requests.get('https://h4motion.victorkrogh.dk/api/v1/device/sessions/8EC325DE-A87F-43F5-B1B8-69437593895B/humidity')
     x = requests.get(f'{BASE_ADDRESS}/{path_api}{sub_area}{path_variables}')
     data_json = x.content
-    # print(data_json)
     data = json.loads(data_json)
-    # print(data["Temperature"])
     df = pd.DataFrame(data["Accelerometer"])
     del df["ID"]
-    # del df["deviceSessionId"]
-    # del df["humidityPercentage"]
-    # del df["created"]
-    # del df["modified"]
-    # print(df)
-
-
 
     # Convert 'LoadDate' column to LoadDatetime type
     df['LoadDate'] = pd.to_datetime(df['LoadDate'])
-    # print(df['LoadDate'])
     # Set 'LoadDate' as the index
     df.set_index('LoadDate', inplace=True)
 
@@ -66,10 +55,6 @@ async def init():
     plt.ylabel('Pitch,Roll, Yaw')
 
     plt.legend()  # add a legend to show the color coding
-    # plt.show()
-    # return plt
-
-
 
 import io
 import base64
