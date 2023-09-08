@@ -7,11 +7,7 @@ from datetime import datetime
 from sqlalchemy import cast, DateTime, Date
 import graph.graph_temp as p_temp
 import graph.graph_accelerometer as graphAccelerometer
-# import graph.graph_humidity as graphHumidity
-# import graph.graph_pressure as graphPressure
 import graph.graph_compass as graphCompass
-#from graph/graph_temp import plot_to_img as pti
-
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://pyUser:password@192.168.3.213:3306/SensorData'
@@ -19,11 +15,7 @@ db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.json.sort_keys = False
 
-
 from urllib.parse import urlparse, parse_qs
-
-
-
 
 #region Models
 
@@ -150,9 +142,6 @@ class Pressure(db.Model):
         return self
 
 #endregion
-
-# with app.app_context():
-#     db.create_all()
 
 #region Schemas
 class TemperatureSchema(ma.SQLAlchemyAutoSchema):
