@@ -22,12 +22,6 @@ async def main(path_api, y_akse = None):
     img = await plot_to_img(path_api, y_akse)
     return img
 
-# sys.setrecursionlimit(50000)    # adjust numbers
-# threading.stack_size(134217728)   # for your needs
-
-# main_thread = threading.Thread(target=main)
-# main_thread.start()
-# main_thread.join()
 
 async def init(path_api, y_akse):
     BASE_ADDRESS = f'http://{os.getenv("SERVER_IP")}:{os.getenv("PORT")}'
@@ -37,15 +31,13 @@ async def init(path_api, y_akse):
     weekago = currentDate - datetime.timedelta(days=7)
     
     path_variables = f'?StartDate={weekago.strftime("%Y-%m-%d")}T00:00:00&EndDate={currentDate.strftime("%Y-%m-%dT%H:%M:%S")}'
-    #x = requests.get('https://h4motion.victorkrogh.dk/api/v1/device/sessions/8EC325DE-A87F-43F5-B1B8-69437593895B/humidity')
-    #x = await requests.get(f'{BASE_ADDRESS}/{path_api}')
 
     x = await requests.get(f'{BASE_ADDRESS}/{path_api}{sub_area}{path_variables}')
-    # print(x)
+
     data_json = x.content
-    # print(data_json)
+
     data = json.loads(data_json)
-    # print(data["Temperature"])
+
     df = pd.DataFrame(data[path_api])
     del df["ID"]
 
@@ -57,7 +49,6 @@ async def init(path_api, y_akse):
 
     # Plot the data
     plt.figure(figsize=(10, 6))
-    #plt.switch_backend('agg')
     if(y_akse == None):
         plt.plot(df.index, df[path_api])
     else:
@@ -75,7 +66,6 @@ async def init(path_api, y_akse):
     else:
         plt.ylabel(y_akse)
     stop = time.time()
-    #plt.show()
     gc.collect() # collect the trash
 
 
@@ -96,5 +86,6 @@ async def plot_to_img(path_api, y_akse):
         gc.collect() #collect the trash
     return img_b64
 
+#Used to run funtion synchronically > used for test purposes
 #asyncio.run(plot_to_img())
 
